@@ -1,0 +1,43 @@
+name: Reusable Next.js VPS Deployment
+
+on:
+  workflow_call:
+    inputs:
+      app_key:
+        description: Application key registered on the VPS
+        required: true
+        type: string
+    secrets:
+      VPS_HOST:
+        required: true
+      VPS_USER:
+        required: true
+      VPS_SSH_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.app_key }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    concurrency:
+      group: deploy-${{ inputs.app_key }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Deploy application through SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          timeout: 30s
+          command_timeout: 35m
+          script_stop: true
+          script: |
+            /usr/local/bin/deploy-next-app "${{ inputs.app_key }}"
